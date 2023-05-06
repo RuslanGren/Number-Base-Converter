@@ -1,49 +1,70 @@
-package converter;
-
+import java.math.BigInteger;
 import java.util.Scanner;
 
 public class Converter {
-    private static final String array = "0123456789abcdef";
+    private static final String array = "0123456789abcdefghijklmnopqrstuvwxyz";
+    private static final int[] base = new int[2];
+    private static final Scanner scanner = new Scanner(System.in);
+    private static boolean flag = true;
 
     public static void start() {
-        Scanner scanner = new Scanner(System.in);
-        while (true) {
-            System.out.println("Do you want to convert /from decimal or /to decimal? (To quit type /exit)");
-            String action = scanner.nextLine();
-            if (action.equalsIgnoreCase("/to")) {
-                System.out.println("Enter source number: ");
-                String num = scanner.nextLine();
-                System.out.println("Enter source base: ");
-                int numberSystem = Integer.parseInt(scanner.nextLine());
-                System.out.println("Conversion to decimal result: " + to(num.toLowerCase(), numberSystem));
-            } else if (action.equalsIgnoreCase("/from")) {
-                System.out.println("Enter a number in decimal system: ");
-                int num = Integer.parseInt(scanner.nextLine());
-                System.out.println("Enter the target base: ");
-                int numberSystem = Integer.parseInt(scanner.nextLine());
-                System.out.println("Conversion result: " + from(num, numberSystem));
-            } else if (action.equalsIgnoreCase("/exit")) {
-                break;
-            } else {
-                System.out.println("unknown command");
+        while (flag) {
+            try {
+                changeBase();
+                convert();
+            } catch (Exception e) {
+                System.out.println("Error;" + e);
             }
+        }
+    }
+
+    private static void convert() {
+        while (flag) {
+            System.out.printf("Enter number in base %d to convert to base %d (To go back type /back) ", base[0], base[1]);
+            String input = scanner.nextLine();
+            if (input.equals("/back")) {
+                break;
+            }
+            BigInteger num = decimalNumberSystem(input);
+            System.out.println("Conversion result: " + toNumberSystem(num));
             System.out.println();
         }
     }
 
-    private static String from(int num, int numberSystem) {
-        StringBuilder output = new StringBuilder();
-        while (num >= numberSystem) {
-            output.insert(0, array.charAt(num % numberSystem));
-            num /= numberSystem;
+    private static void changeBase() throws IllegalAccessException {
+        System.out.println("Enter two numbers in format: {source base} {target base} (To quit type /exit) ");
+        String[] input = scanner.nextLine().split(" ");
+        if (input[0].equals("/exit")) {
+            flag = false;
+            return;
         }
-        return output.insert(0, array.charAt(num)).toString();
+        if (input.length != 2) {
+            throw new IllegalAccessException("Wrong length");
+        }
+        base[0] = Integer.parseInt(input[0]);
+        base[1] = Integer.parseInt(input[1]);
+        if (base[0] < 2 || base[0] > 36) {
+            throw new IllegalAccessException("Wrong first parameter");
+        }
+        if (base[1] < 2 || base[1] > 36) {
+            throw new IllegalAccessException("Wrong second parameter");
+        }
     }
 
-    private static long to(String num, int numberSystem) {
-        long output = 0;
+    private static String toNumberSystem(BigInteger num) {
+        StringBuilder output = new StringBuilder();
+        BigInteger numberSystem = BigInteger.valueOf(base[1]);
+        while (numberSystem.compareTo(num)  <= 0) {
+            output.insert(0, array.charAt(num.remainder(numberSystem).intValue()));
+            num = num.divide(numberSystem);
+        }
+        return output.insert(0, array.charAt(num.intValue())).toString();
+    }
+
+    private static BigInteger decimalNumberSystem(String num) {
+        BigInteger output = BigInteger.ZERO;
         for (int i = 0; i < num.length(); i++) {
-            output += array.indexOf(num.charAt(i)) * (Math.pow(numberSystem, num.length()-i-1));
+            output = output.add(BigInteger.valueOf((long) (array.indexOf(num.charAt(i)) * (Math.pow(base[0], num.length()-i-1)))));
         }
         return output;
     }
